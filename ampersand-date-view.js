@@ -1,5 +1,5 @@
 var View = require('ampersand-view');
-var SelectView = require('ampersand-select-view');
+//var SelectView = require('ampersand-select-view');
 var InputView = require('ampersand-input-view');
 var _ = require('underscore');
 
@@ -41,6 +41,11 @@ module.exports = View.extend({
             type: 'toggle',
             hook: 'message-container'
         },
+        'monthPlaceholder': {
+            type: 'attribute',
+            selector: '[data-hook=month] input',
+            name: 'placeholder'
+        },
         'dayPlaceholder': {
             type: 'attribute',
             selector: '[data-hook=day] input',
@@ -79,22 +84,36 @@ module.exports = View.extend({
         View.prototype.render.apply(this);
         this.input = this.query('input');
 
-        this.monthView = this.renderSubview(new SelectView({
-            template: '<select class="form-control"></select>',
+        this.monthView = this.renderSubview(new InputView({
+            template: '<input class="form-control" maxlength="2">',
             name: 'month_do_not_use_directly',
-            options: [['0','January'],['1','February'],['2','March'],['3','April'],['4','May'],['5','June'],['6','July'],['7','August'],['8','September'],['9','October'],['10','November'],['11','December']],
-            unselectedText: 'Month',
-            value: this.dateValid ? this.value.getMonth().toString() : undefined,
-            required: true
+            placeholder: 'MM',
+            value: this.dateValid ? this.value.getMonth() + 1 : undefined,
+            required: true,
+            requiredMessage: 'Month is required.',
+            tests: [
+                function (val) {
+                    if (val < 1 || val > 12) {
+                        return 'Invalid month.';
+                    }
+                },
+                function (val) {
+                    if (!/^[0-9]+$/.test(val)) {
+                        return 'Month must be a number.';
+                    }
+                }
+            ]
         }), '[data-hook=month]');
-        this.monthSelect = this.monthView.select;
+        this.monthInput = this.monthView.query('input');
 
         this.dayView = this.renderSubview(new InputView({
             template: '<input class="form-control" maxlength="2">',
             name: 'day_do_not_use_directly',
             required: true,
             placeholder: 'DD',
-            value: this.dateValid ? this.value.getDate().toString() : '',
+            // use UTCDate assumes you populate dates with string like "2015-10-22" with no timezone
+            // and corrects for JS converting to local time which could change output date
+            value: this.dateValid ? this.value.getUTCDate().toString() : '',
             requiredMessage: 'Day is required.',
             tests: [
                 function (val) {
@@ -133,6 +152,7 @@ module.exports = View.extend({
         inputValue: 'any',
         startingValue: 'any',
         name: 'string',
+        monthPlaceholder: ['string', true, ''],
         dayPlaceholder: ['string', true, ''],
         yearPlaceholder: ['string', true, ''],
         yearMax: ['number', true, 2100],
@@ -160,8 +180,8 @@ module.exports = View.extend({
                 if (!this.yearView) {
                     return true;
                 }
-                this.monthView.validate();
-                return this.monthView.valid && !(this.dayView.runTests() || this.yearView.runTests());
+                //this.monthView.validate();
+                return !(this.monthView.runTests() || this.dayView.runTests() || this.yearView.runTests());
             }
         },
         dateValid: {
@@ -204,12 +224,14 @@ module.exports = View.extend({
     setValue: function (value, skipValidation) {
         //if we have a valid date, use it.  Otherwise, empty everything
         if (this.dateValid) {
-            this.monthView.setValue(value.getMonth().toString(), skipValidation);
-            this.dayView.setValue(value.getDate().toString(), skipValidation);
+            // adjust for 0 based JS dates
+            var month = parseInt(value.getMonth()) + 1;
+            this.monthView.setValue(month, skipValidation);
+            this.dayView.setValue(value.getUTCDate().toString(), skipValidation);
             this.yearView.setValue(value.getFullYear().toString(), skipValidation);
             this.inputValue = value;
         } else {
-            this.monthView.setValue(undefined, skipValidation);
+            this.monthView.setValue('', skipValidation);
             this.dayView.setValue('', skipValidation);
             this.yearView.setValue('', skipValidation);
             this.inputValue = null;
@@ -217,10 +239,10 @@ module.exports = View.extend({
     },
 
     handleInputChanged: function () {
-        if (this.monthSelect.value === '' || this.dayInput.value === '' || this.yearInput.value === '') {
+        if (this.monthInput.value === '' || this.dayInput.value === '' || this.yearInput.value === '') {
             this.inputValue = null;
         } else {
-            this.inputValue = new Date(parseInt(this.yearInput.value), parseInt(this.monthSelect.value), parseInt(this.dayInput.value));
+            this.inputValue = new Date(parseInt(this.yearInput.value), parseInt(this.monthInput.value - 1), parseInt(this.dayInput.value));
         }
         this.updateMessage();
     },
@@ -229,20 +251,15 @@ module.exports = View.extend({
         return this.inputValue;
     },
 
-    handleBlur: function (event) {
-        if (event.target === this.monthSelect) {
-            this.monthView.validate();
-        }
+    handleBlur: function () {
         this.updateMessage();
     },
 
     updateMessage: function() {
         var message = '';
-        if (event.target === this.monthSelect) {
-            this.monthView.validate();
-        }
-        if (!this.monthView.valid) {
-            message = 'Month must be set.   ';
+
+        if (this.monthView.inputValue && this.monthView.changed) {
+            message += this.monthView.getErrorMessage() + '   ';
         }
         if (this.dayView.inputValue && this.dayView.changed) {
             message += this.dayView.getErrorMessage() + '   ';
@@ -254,31 +271,27 @@ module.exports = View.extend({
     },
 
     beforeSubmit: function () {
-        this.monthView.validate();
-        if (!this.monthView.valid) {
-            this.message = 'Month must be set.';
-            return;
-        }
+        this.monthView.runTests();
         this.dayView.runTests();
         this.yearView.runTests();
-        this.message = this.dayView.getErrorMessage() || this.yearView.getErrorMessage();
+
+        this.message = this.monthView.getErrorMessage() || this.dayView.getErrorMessage() || this.yearView.getErrorMessage();
     },
 
     initInputBindings: function () {
-        this.monthSelect.addEventListener('blur', this.handleBlur.bind(this), false);
+        this.monthInput.addEventListener('blur', this.handleBlur.bind(this), false);
         this.dayInput.addEventListener('blur', this.handleBlur.bind(this), false);
         this.yearInput.addEventListener('blur', this.handleBlur.bind(this), false);
-        //listening to change instead of input due to timing issue
-        this.monthSelect.addEventListener('change',this.handleInputChanged, false);
+        this.monthInput.addEventListener('input',this.handleInputChanged, false);
         this.dayInput.addEventListener('input', this.handleInputChanged, false);
         this.yearInput.addEventListener('input', this.handleInputChanged, false);
     },
 
     remove: function () {
-        this.monthSelect.removeEventListener('blur', this.handleBlur, false);
+        this.monthInput.removeEventListener('blur', this.handleBlur, false);
         this.dayInput.removeEventListener('blur', this.handleBlur, false);
         this.yearInput.removeEventListener('blur', this.handleBlur, false);
-        this.monthSelect.removeEventListener('change', this.handleInputChanged, false);
+        this.monthInput.removeEventListener('input', this.handleInputChanged, false);
         this.dayInput.removeEventListener('input', this.handleInputChanged, false);
         this.yearInput.removeEventListener('input', this.handleInputChanged, false);
         View.prototype.remove.apply(this, arguments);
