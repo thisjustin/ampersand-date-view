@@ -1,10 +1,10 @@
 {
-  "name": "ampersand-date-view",
-  "description": "A view module for user date input.",
-  "version": "0.0.8",
+  "name": "ampersand-date-view2",
+  "description": "A view module for user date input. This form displays all fields as inputs. Fork of https://github.com/mikehedman/ampersand-date-view which uses a select for month.",
+  "version": "0.0.9",
   "author": {
-    "name": "Mike Hedman",
-    "email": "mikehedman@gmail.com"
+    "name": "Justin McCammon",
+    "email": "justinmccammonblog@gmail.com"
   },
   "browserify": {
     "transform": [
@@ -12,13 +12,12 @@
     ]
   },
   "bugs": {
-    "url": "https://github.com/mikehedman/ampersand-date-view/issues"
+    "url": "https://github.com/thisjustin/ampersand-date-view/issues"
   },
   "dependencies": {
     "ampersand-version": "^1.0.1",
     "ampersand-view": "^7.0.0",
     "ampersand-input-view": "^3.1.0",
-    "ampersand-select-view": "^2.2.1",
     "underscore": "^1.6.0"
   },
   "devDependencies": {
@@ -34,10 +33,10 @@
     "tape": "^2.14.0",
     "tape-run": "^0.3.0"
   },
-  "homepage": "https://github.com/mikehedman/ampersand-date-view.git",
+  "homepage": "https://github.com/thisjustin/ampersand-date-view.git",
   "repository": {
     "type": "git",
-    "url": "https://github.com/mikehedman/ampersand-date-view.git"
+    "url": "https://github.com/thisjustin/ampersand-date-view.git"
   },
   "keywords": [
     "forms",

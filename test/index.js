@@ -6,17 +6,11 @@ function isHidden(el) {
     return el.style.display === 'none';
 }
 
-function getSelectText(parent) {
-    var sel = parent.querySelector('[data-hook=month] select');
-    return sel.options[sel.selectedIndex].innerHTML;
-}
-
 test('basic initialization', function (t) {
     var control = new DateView({ name: 'title' });
     control.render();
     t.equal(control.el.tagName, 'DIV');
-    t.equal(control.el.querySelectorAll('input').length, 3);
-    t.equal(control.el.querySelectorAll('select').length, 1);
+    t.equal(control.el.querySelectorAll('input').length, 4);
     t.equal(control.el.querySelector('input[type=hidden]').getAttribute('name'), 'title');
     t.end();
 });
@@ -29,7 +23,7 @@ test('initialize with value', function (t) {
 
     control.render();
 
-    t.equal(getSelectText(control.el), 'October');
+    t.equal(control.el.querySelector('[data-hook=month] input').value, '10');
     t.equal(control.el.querySelector('[data-hook=day] input').value, '12');
     t.equal(control.el.querySelector('[data-hook=year] input').value, '2000');
     t.end();
@@ -43,7 +37,7 @@ test('initialize with invalid value', function (t) {
 
     control.render();
 
-    t.equal(control.el.querySelector('[data-hook=month] select').value, '');
+    t.equal(control.el.querySelector('[data-hook=month] input').value, '');
     t.equal(control.el.querySelector('[data-hook=day] input').value, '');
     t.equal(control.el.querySelector('[data-hook=year] input').value, '');
     t.end();
@@ -99,7 +93,7 @@ test('month change event', function (t) {
     control.yearView.setValue('1980', false);
     control.handleInputChanged();
     control.beforeSubmit();
-    t.equal(control.message.trim(), 'Month must be set.');
+    t.equal(control.message.trim(), 'Month is required.');
     t.ok(!isHidden(errorMessage), 'error should be visible');
 
     //fill it in, message should go away
