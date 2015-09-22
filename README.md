@@ -1,4 +1,4 @@
-# ampersand-date-view2    ![Build Status](https://api.travis-ci.org/thisjustin/ampersand-date-view.svg?branch=master)
+# ampersand-date-view2    ![Build Status](https://travis-ci.org/thisjustin/ampersand-date-view.svg?branch=master)
 
 An extension of
  [ampersand-date-view](https://github.com/mikehedman/ampersand-date-view) and
